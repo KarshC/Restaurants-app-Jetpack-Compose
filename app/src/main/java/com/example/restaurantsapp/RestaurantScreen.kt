@@ -31,7 +31,7 @@ import com.example.restaurantsapp.ui.theme.RestaurantsAppTheme
 
 @Composable
 fun RestaurantScreen() {
-    val viewModel : RestaurantViewModel = viewModel()
+    val viewModel: RestaurantViewModel = viewModel()
     LazyColumn(
         contentPadding = PaddingValues(
             vertical = 8.dp,
@@ -45,11 +45,23 @@ fun RestaurantScreen() {
 }
 
 @Composable
-fun RestaurantItem(item : Restaurant){
-    Card(elevation = 4.dp,
-    modifier = Modifier.padding(8.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(8.dp)) {
+fun RestaurantItem(item: Restaurant) {
+    val favoriteState = remember {
+        mutableStateOf(false)
+    }
+    val icon = if (favoriteState.value) {
+        Icons.Filled.Favorite
+    } else {
+        Icons.Filled.FavoriteBorder
+    }
+    Card(
+        elevation = 4.dp,
+        modifier = Modifier.padding(8.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(8.dp)
+        ) {
             RestaurantIcon(
                 Icons.Filled.Place,
                 Modifier.weight(0.15f)
@@ -59,55 +71,49 @@ fun RestaurantItem(item : Restaurant){
                 item.description,
                 Modifier.weight(0.7f)
             )
-            FavoriteIcon(
+            RestaurantIcon(
+                icon,
                 Modifier.weight(0.15f)
+            ) {
+                favoriteState.value = !favoriteState.value
+            }
+
+        }
+    }
+}
+
+@Composable
+private fun RestaurantDetails(title: String, description: String, modifier: Modifier) {
+    Column(modifier = modifier) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.h6
+        )
+        CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.medium) {
+            Text(
+                text = description,
+                style = MaterialTheme.typography.body2
             )
         }
     }
 }
 
 @Composable
-fun FavoriteIcon(modifier: Modifier) {
-    val favoriteState = remember {
-        mutableStateOf(false)
-    }
-    val icon = if (favoriteState.value){
-        Icons.Filled.Favorite
-    } else {
-        Icons.Filled.FavoriteBorder
-    }
+private fun RestaurantIcon(icon: ImageVector, modifier: Modifier, onClick: () -> Unit = { }) {
     Image(
         imageVector = icon,
-        contentDescription = "Favorite restaurant icon",
-        modifier = modifier.padding(8.dp)
+        contentDescription = "Restaurant Icon",
+        modifier = modifier
+            .padding(8.dp)
             .clickable {
-                favoriteState.value = !favoriteState.value
+                onClick()
             }
     )
 }
 
-@Composable
-private fun RestaurantDetails(title: String, description : String, modifier: Modifier) {
-    Column(modifier = modifier) {
-        Text(text = title,
-        style = MaterialTheme.typography.h6)
-        CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.medium) {
-            Text(text = description,
-            style = MaterialTheme.typography.body2)
-        }
-    }
-}
-
-@Composable
-private fun RestaurantIcon(icon: ImageVector, modifier: Modifier) {
-    Image(imageVector = icon,
-        contentDescription = "Restaurant Icon",
-        modifier = modifier.padding(8.dp))
-}
-
 @Preview(showBackground = true)
 @Composable
-fun DefaultPreview(){
+fun DefaultPreview() {
     RestaurantsAppTheme {
         RestaurantScreen()
     }
