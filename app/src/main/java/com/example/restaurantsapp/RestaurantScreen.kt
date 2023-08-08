@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -32,24 +33,35 @@ import com.example.restaurantsapp.ui.theme.RestaurantsAppTheme
 @Composable
 fun RestaurantScreen() {
     val viewModel: RestaurantViewModel = viewModel()
+    val state: MutableState<List<Restaurant>> = remember {
+        mutableStateOf(viewModel.getRestaurants())
+    }
     LazyColumn(
         contentPadding = PaddingValues(
             vertical = 8.dp,
             horizontal = 8.dp
         )
     ) {
-        items(viewModel.getRestaurants()) { restaurant ->
-            RestaurantItem(restaurant)
+        items(state.value) { restaurant ->
+            RestaurantItem(restaurant) { id ->
+                val restaurants = state.value.toMutableList()
+                val itemIndex = restaurants.indexOfFirst {
+                    it.id == id
+                }
+                val item = restaurants[itemIndex]
+                restaurants[itemIndex] = item.copy(isFavorite = !item.isFavorite)
+                state.value = restaurants
+            }
         }
     }
 }
 
 @Composable
-fun RestaurantItem(item: Restaurant) {
-    val favoriteState = remember {
-        mutableStateOf(false)
-    }
-    val icon = if (favoriteState.value) {
+fun RestaurantItem(
+    item: Restaurant,
+    onClick: (id: Int) -> Unit
+) {
+    val icon = if (item.isFavorite) {
         Icons.Filled.Favorite
     } else {
         Icons.Filled.FavoriteBorder
@@ -75,7 +87,7 @@ fun RestaurantItem(item: Restaurant) {
                 icon,
                 Modifier.weight(0.15f)
             ) {
-                favoriteState.value = !favoriteState.value
+                onClick(item.id)
             }
 
         }
