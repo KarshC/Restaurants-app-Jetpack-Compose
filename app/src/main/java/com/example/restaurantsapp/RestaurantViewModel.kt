@@ -3,6 +3,9 @@ package com.example.restaurantsapp
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -12,7 +15,8 @@ class RestaurantViewModel(private val stateHandle: SavedStateHandle) : ViewModel
     }
 
     private var restInterface: RestaurantApiService
-    val state = mutableStateOf(dummyRestaurants.restoreSelection())
+    val state = mutableStateOf(emptyList<Restaurant>())
+    private lateinit var restaurantsCall : Call<List<Restaurant>>
 
     init {
         val retrofit: Retrofit = Retrofit.Builder()
@@ -21,7 +25,9 @@ class RestaurantViewModel(private val stateHandle: SavedStateHandle) : ViewModel
             .build()
 
         restInterface = retrofit.create(RestaurantApiService::class.java)
+        getRestaurants()
     }
+
     fun toggleFavorite(id: Int) {
         val restaurants = state.value.toMutableList()
         val itemIndex = restaurants.indexOfFirst {
@@ -54,5 +60,30 @@ class RestaurantViewModel(private val stateHandle: SavedStateHandle) : ViewModel
             return restaurantsMap.values.toList()
         }
         return this
+    }
+
+    private fun getRestaurants() {
+        restaurantsCall = restInterface.getRestaurants()
+        restaurantsCall.enqueue(
+            object : Callback<List<Restaurant>> {
+                override fun onResponse(
+                    call: Call<List<Restaurant>>,
+                    response: Response<List<Restaurant>>
+                ) {
+                    response.body()?.let { restaurants ->
+                        state.value = restaurants.restoreSelection()
+                    }
+                }
+
+                override fun onFailure(call: Call<List<Restaurant>>, t: Throwable) {
+                    t.printStackTrace()
+                }
+            }
+        )
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        restaurantsCall.cancel()
     }
 }
