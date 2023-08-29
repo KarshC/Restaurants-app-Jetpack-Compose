@@ -4,6 +4,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -17,6 +18,8 @@ class RestaurantViewModel(private val stateHandle: SavedStateHandle) : ViewModel
 
     private var restInterface: RestaurantApiService
     val state = mutableStateOf(emptyList<Restaurant>())
+    private val errorHandler =
+        CoroutineExceptionHandler { _, throwable -> throwable.printStackTrace() }
 
     init {
         val retrofit: Retrofit = Retrofit.Builder()
@@ -63,7 +66,7 @@ class RestaurantViewModel(private val stateHandle: SavedStateHandle) : ViewModel
     }
 
     private fun getRestaurants() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.IO + errorHandler) {
             val restaurants = restInterface.getRestaurants()
             withContext(Dispatchers.Main) {
                 state.value = restaurants.restoreSelection()
