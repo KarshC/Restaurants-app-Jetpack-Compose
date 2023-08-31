@@ -84,8 +84,13 @@ fun RestaurantItem(
 }
 
 @Composable
-private fun RestaurantDetails(title: String, description: String, modifier: Modifier) {
-    Column(modifier = modifier) {
+fun RestaurantDetails(
+    title: String,
+    description: String,
+    modifier: Modifier,
+    horizontalAlignment: Alignment.Horizontal = Alignment.Start
+) {
+    Column(modifier = modifier, horizontalAlignment = horizontalAlignment) {
         Text(
             text = title,
             style = MaterialTheme.typography.h6
@@ -100,7 +105,7 @@ private fun RestaurantDetails(title: String, description: String, modifier: Modi
 }
 
 @Composable
-private fun RestaurantIcon(icon: ImageVector, modifier: Modifier, onClick: () -> Unit = { }) {
+fun RestaurantIcon(icon: ImageVector, modifier: Modifier, onClick: () -> Unit = { }) {
     Image(
         imageVector = icon,
         contentDescription = "Restaurant Icon",
