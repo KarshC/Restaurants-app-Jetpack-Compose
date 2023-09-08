@@ -24,7 +24,9 @@ class MainActivity : ComponentActivity() {
         val navController = rememberNavController()
         NavHost(navController, startDestination = "restaurants") {
             composable(route = "restaurants") {
-                RestaurantScreen()
+                RestaurantScreen { id ->
+                    navController.navigate("restaurants/$id")
+                }
             }
             composable(route = "restaurants/{restaurant_id}") {
                 RestaurantDetailsScreen()

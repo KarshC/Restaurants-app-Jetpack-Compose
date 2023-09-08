@@ -28,7 +28,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.restaurantsapp.ui.theme.RestaurantsAppTheme
 
 @Composable
-fun RestaurantScreen() {
+fun RestaurantScreen(onItemClick: (id: Int) -> Unit = {}) {
     val viewModel: RestaurantViewModel = viewModel()
 
     LazyColumn(
@@ -38,9 +38,12 @@ fun RestaurantScreen() {
         )
     ) {
         items(viewModel.state.value) { restaurant ->
-            RestaurantItem(restaurant) { id ->
-                viewModel.toggleFavorite(id)
-            }
+            RestaurantItem(restaurant,
+                onFavoriteClick = { id ->
+                    viewModel.toggleFavorite(id)
+                },
+                onItemClick = { id -> onItemClick(id) }
+            )
         }
     }
 }
@@ -48,7 +51,8 @@ fun RestaurantScreen() {
 @Composable
 fun RestaurantItem(
     item: Restaurant,
-    onClick: (id: Int) -> Unit
+    onFavoriteClick: (id: Int) -> Unit,
+    onItemClick: (id: Int) -> Unit
 ) {
     val icon = if (item.isFavorite) {
         Icons.Filled.Favorite
@@ -57,7 +61,11 @@ fun RestaurantItem(
     }
     Card(
         elevation = 4.dp,
-        modifier = Modifier.padding(8.dp)
+        modifier = Modifier
+            .padding(8.dp)
+            .clickable {
+                onItemClick(item.id)
+            }
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -76,9 +84,8 @@ fun RestaurantItem(
                 icon,
                 Modifier.weight(0.15f)
             ) {
-                onClick(item.id)
+                onFavoriteClick(item.id)
             }
-
         }
     }
 }
