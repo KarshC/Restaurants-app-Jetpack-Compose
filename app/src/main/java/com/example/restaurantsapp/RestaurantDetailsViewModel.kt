@@ -10,7 +10,7 @@ import kotlinx.coroutines.withContext
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
-class RestaurantDetailsViewModel(private val stateHandle: SavedStateHandle) : ViewModel() {
+class RestaurantDetailsViewModel(stateHandle: SavedStateHandle) : ViewModel() {
     private var restInterface: RestaurantApiService
     val state = mutableStateOf<Restaurant?>(null)
 
@@ -23,7 +23,7 @@ class RestaurantDetailsViewModel(private val stateHandle: SavedStateHandle) : Vi
         restInterface = retrofit.create(RestaurantApiService::class.java)
         val id = stateHandle.get<Int>("restaurant_id") ?: 0
         viewModelScope.launch {
-            val restaurant = getRemoteRestaurant(2)
+            val restaurant = getRemoteRestaurant(id)
             state.value = restaurant
         }
     }
