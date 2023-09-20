@@ -8,8 +8,11 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import retrofit2.HttpException
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.net.ConnectException
+import java.net.UnknownHostException
 
 class RestaurantViewModel(private val stateHandle: SavedStateHandle) : ViewModel() {
     companion object {
@@ -17,6 +20,8 @@ class RestaurantViewModel(private val stateHandle: SavedStateHandle) : ViewModel
     }
 
     private var restInterface: RestaurantApiService
+    private var restaurantsDao =
+        RestaurantsDb.getDaoInstance(RestaurantsApplication.getAppContext())
     val state = mutableStateOf(emptyList<Restaurant>())
     private val errorHandler =
         CoroutineExceptionHandler { _, throwable -> throwable.printStackTrace() }
@@ -67,14 +72,30 @@ class RestaurantViewModel(private val stateHandle: SavedStateHandle) : ViewModel
 
     private fun getRestaurants() {
         viewModelScope.launch(errorHandler) {
-            val restaurants = getRemoteRestaurants()
+            val restaurants = getAllRestaurants()
             state.value = restaurants.restoreSelection()
         }
     }
 
-    private suspend fun getRemoteRestaurants(): List<Restaurant> {
-        return withContext(Dispatchers.IO){
-            restInterface.getRestaurants()
+    private suspend fun getAllRestaurants(): List<Restaurant> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val restaurants = restInterface.getRestaurants()
+                restaurantsDao.addAll(restaurants)
+                return@withContext restaurants
+            } catch (e: Exception) {
+                when (e) {
+                    is UnknownHostException,
+                    is ConnectException,
+                    is HttpException -> {
+                        return@withContext restaurantsDao.getAll()
+                    }
+
+                    else -> {
+                        throw e
+                    }
+                }
+            }
         }
     }
 
