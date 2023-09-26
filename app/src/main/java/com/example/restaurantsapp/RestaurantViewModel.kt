@@ -45,6 +45,9 @@ class RestaurantViewModel(private val stateHandle: SavedStateHandle) : ViewModel
         restaurants[itemIndex] = item.copy(isFavorite = !item.isFavorite)
         storeSelection(restaurants[itemIndex])
         state.value = restaurants
+        viewModelScope.launch {
+            toggleFavoriteRestaurant(id, item.isFavorite)
+        }
     }
 
     private fun storeSelection(restaurant: Restaurant) {
@@ -99,5 +102,10 @@ class RestaurantViewModel(private val stateHandle: SavedStateHandle) : ViewModel
             }
         }
     }
+
+    private suspend fun toggleFavoriteRestaurant(id: Int, oldValue: Boolean) =
+        withContext(Dispatchers.IO) {
+            restaurantsDao.update(PartialRestaurant(id, isFavorite = !oldValue))
+        }
 
 }
