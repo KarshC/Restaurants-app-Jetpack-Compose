@@ -45,8 +45,9 @@ class RestaurantViewModel(private val stateHandle: SavedStateHandle) : ViewModel
         restaurants[itemIndex] = item.copy(isFavorite = !item.isFavorite)
         storeSelection(restaurants[itemIndex])
         state.value = restaurants
-        viewModelScope.launch {
-            toggleFavoriteRestaurant(id, item.isFavorite)
+        viewModelScope.launch(errorHandler) {
+            val updatedRestaurants = toggleFavoriteRestaurant(id, item.isFavorite)
+            state.value = updatedRestaurants
         }
     }
 
@@ -84,15 +85,15 @@ class RestaurantViewModel(private val stateHandle: SavedStateHandle) : ViewModel
     private suspend fun getAllRestaurants(): List<Restaurant> {
         return withContext(Dispatchers.IO) {
             try {
-                val restaurants = restInterface.getRestaurants()
-                restaurantsDao.addAll(restaurants)
-                return@withContext restaurants
+                refreshCache()
             } catch (e: Exception) {
                 when (e) {
                     is UnknownHostException,
                     is ConnectException,
                     is HttpException -> {
-                        return@withContext restaurantsDao.getAll()
+                        if (restaurantsDao.getAll().isEmpty()) throw Exception(
+                            "Something went wrong. " + "We have no data to show."
+                        )
                     }
 
                     else -> {
@@ -100,12 +101,25 @@ class RestaurantViewModel(private val stateHandle: SavedStateHandle) : ViewModel
                     }
                 }
             }
+            return@withContext restaurantsDao.getAll()
         }
+    }
+
+    private suspend fun refreshCache() {
+        val remoteRestaurants = restInterface.getRestaurants()
+        val favoriteRestaurants = restaurantsDao.getAllFavorited()
+        restaurantsDao.addAll(remoteRestaurants)
+        restaurantsDao.updateAll(
+            favoriteRestaurants.map{
+                PartialRestaurant(it.id, true)
+            }
+        )
     }
 
     private suspend fun toggleFavoriteRestaurant(id: Int, oldValue: Boolean) =
         withContext(Dispatchers.IO) {
             restaurantsDao.update(PartialRestaurant(id, isFavorite = !oldValue))
+            restaurantsDao.getAll()
         }
 
 }
