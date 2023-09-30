@@ -1,7 +1,6 @@
 package com.example.restaurantsapp
 
 import androidx.compose.runtime.mutableStateOf
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -14,10 +13,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.net.ConnectException
 import java.net.UnknownHostException
 
-class RestaurantViewModel(private val stateHandle: SavedStateHandle) : ViewModel() {
-    companion object {
-        const val FAVORITES = "favorites"
-    }
+class RestaurantViewModel() : ViewModel() {
 
     private var restInterface: RestaurantApiService
     private var restaurantsDao =
@@ -36,49 +32,17 @@ class RestaurantViewModel(private val stateHandle: SavedStateHandle) : ViewModel
         getRestaurants()
     }
 
-    fun toggleFavorite(id: Int) {
-        val restaurants = state.value.toMutableList()
-        val itemIndex = restaurants.indexOfFirst {
-            it.id == id
-        }
-        val item = restaurants[itemIndex]
-        restaurants[itemIndex] = item.copy(isFavorite = !item.isFavorite)
-        storeSelection(restaurants[itemIndex])
-        state.value = restaurants
+    fun toggleFavorite(id: Int, oldValue: Boolean) {
         viewModelScope.launch(errorHandler) {
-            val updatedRestaurants = toggleFavoriteRestaurant(id, item.isFavorite)
+            val updatedRestaurants = toggleFavoriteRestaurant(id, oldValue)
             state.value = updatedRestaurants
         }
-    }
-
-    private fun storeSelection(restaurant: Restaurant) {
-        val savedToggle = stateHandle
-            .get<List<Int>?>(FAVORITES)
-            .orEmpty().toMutableList()
-
-        if (restaurant.isFavorite) savedToggle.add(restaurant.id)
-        else savedToggle.remove(restaurant.id)
-        stateHandle[FAVORITES] = savedToggle
-    }
-
-    private fun List<Restaurant>.restoreSelection(): List<Restaurant> {
-        stateHandle.get<List<Int>?>(FAVORITES)?.let { selectedIds ->
-            val restaurantsMap = this.associateBy {
-                it.id
-            }.toMutableMap()
-            selectedIds.forEach { id ->
-                val restaurant = restaurantsMap[id] ?: return@forEach
-                restaurantsMap[id] = restaurant.copy(isFavorite = true)
-            }
-            return restaurantsMap.values.toList()
-        }
-        return this
     }
 
     private fun getRestaurants() {
         viewModelScope.launch(errorHandler) {
             val restaurants = getAllRestaurants()
-            state.value = restaurants.restoreSelection()
+            state.value = restaurants
         }
     }
 
